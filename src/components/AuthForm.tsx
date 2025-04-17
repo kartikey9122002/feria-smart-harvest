@@ -1,0 +1,178 @@
+
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { login, register } from "@/services/auth";
+import { useToast } from "@/components/ui/use-toast";
+import { UserRole } from "@/types";
+
+interface AuthFormProps {
+  type: "login" | "register";
+}
+
+const AuthForm = ({ type }: AuthFormProps) => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
+  
+  // Form state
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [role, setRole] = useState<UserRole>("buyer");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      if (type === "login") {
+        await login({ email, password });
+        toast({
+          title: "Login successful",
+          description: "Welcome back to FarmFeria!",
+        });
+      } else {
+        await register({ email, password, name, role });
+        toast({
+          title: "Registration successful",
+          description: "Your account has been created.",
+        });
+      }
+      navigate("/dashboard");
+    } catch (error) {
+      toast({
+        title: "Authentication error",
+        description: error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <Card className="w-full max-w-md mx-auto">
+      <CardHeader>
+        <CardTitle>{type === "login" ? "Login" : "Create an Account"}</CardTitle>
+        <CardDescription>
+          {type === "login"
+            ? "Enter your credentials to access your account"
+            : "Fill in the details to create your FarmFeria account"}
+        </CardDescription>
+      </CardHeader>
+      <form onSubmit={handleSubmit}>
+        <CardContent className="space-y-4">
+          {type === "register" && (
+            <div className="space-y-2">
+              <Label htmlFor="name">Name</Label>
+              <Input
+                id="name"
+                placeholder="Enter your name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="Enter your email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password"
+              type="password"
+              placeholder="Enter your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+
+          {type === "register" && (
+            <div className="space-y-2">
+              <Label>I am a</Label>
+              <RadioGroup
+                value={role}
+                onValueChange={(value) => setRole(value as UserRole)}
+                className="flex flex-col space-y-1"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="seller" id="seller" />
+                  <Label htmlFor="seller">Farmer (Seller)</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="buyer" id="buyer" />
+                  <Label htmlFor="buyer">Consumer (Buyer)</Label>
+                </div>
+              </RadioGroup>
+            </div>
+          )}
+        </CardContent>
+        <CardFooter className="flex flex-col space-y-4">
+          <Button
+            type="submit"
+            className="w-full bg-farm-green hover:bg-farm-green-dark"
+            disabled={isLoading}
+          >
+            {isLoading
+              ? "Loading..."
+              : type === "login"
+              ? "Login"
+              : "Create Account"}
+          </Button>
+          
+          <div className="text-center text-sm">
+            {type === "login" ? (
+              <p>
+                Don't have an account?{" "}
+                <Button
+                  variant="link"
+                  className="p-0 h-auto font-normal text-farm-green hover:text-farm-green-dark"
+                  onClick={() => navigate("/register")}
+                >
+                  Register now
+                </Button>
+              </p>
+            ) : (
+              <p>
+                Already have an account?{" "}
+                <Button
+                  variant="link"
+                  className="p-0 h-auto font-normal text-farm-green hover:text-farm-green-dark"
+                  onClick={() => navigate("/login")}
+                >
+                  Login
+                </Button>
+              </p>
+            )}
+          </div>
+        </CardFooter>
+      </form>
+    </Card>
+  );
+};
+
+export default AuthForm;
