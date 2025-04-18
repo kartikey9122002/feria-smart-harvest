@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getCurrentUser } from "@/services/auth";
@@ -12,6 +11,8 @@ import { useToast } from "@/components/ui/use-toast";
 import Header from "@/components/Header";
 import ProductCard from "@/components/ProductCard";
 import { getProductsForAdmin, updateProductStatus } from "@/services/product";
+import UserManagement from "@/components/admin/UserManagement";
+import GovtSchemes from "@/components/admin/GovtSchemes";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -251,44 +252,9 @@ const AdminDashboard = () => {
             </div>
           )}
           
-          {activePage === 'schemes' && (
-            <div className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Government Schemes Management</CardTitle>
-                  <CardDescription>Add and manage government schemes for farmers</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground mb-4">Add government schemes that will be displayed to farmers and buyers.</p>
-                  <Button className="bg-farm-green hover:bg-farm-green-dark">
-                    Add New Scheme
-                  </Button>
-                </CardContent>
-              </Card>
-              
-              <div className="text-center py-10">
-                <p className="text-muted-foreground">Government schemes management functionality will be implemented in the next phase.</p>
-              </div>
-            </div>
-          )}
+          {activePage === 'schemes' && <GovtSchemes />}
           
-          {activePage === 'users' && (
-            <div className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>User Management</CardTitle>
-                  <CardDescription>Manage sellers and buyers on the platform</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground mb-4">View and manage all users registered on the platform.</p>
-                </CardContent>
-              </Card>
-              
-              <div className="text-center py-10">
-                <p className="text-muted-foreground">User management functionality will be implemented in the next phase.</p>
-              </div>
-            </div>
-          )}
+          {activePage === 'users' && <UserManagement />}
         </div>
       </main>
     </div>
