@@ -71,6 +71,13 @@ export const getProductsBySeller = async (sellerId: string): Promise<Product[]> 
   return MOCK_PRODUCTS.filter(product => product.sellerId === sellerId);
 };
 
+// Get products for admin (all products regardless of status)
+export const getProductsForAdmin = async (): Promise<Product[]> => {
+  // Simulate API request delay
+  await new Promise(resolve => setTimeout(resolve, 800));
+  return MOCK_PRODUCTS;
+};
+
 // Get products for buyers (only approved products)
 export const getApprovedProducts = async (): Promise<Product[]> => {
   // Simulate API request delay
