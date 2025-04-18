@@ -1,4 +1,3 @@
-
 export type UserRole = 'seller' | 'buyer' | 'admin';
 
 export interface User {
@@ -38,4 +37,22 @@ export interface LoginCredentials {
 export interface RegisterData extends LoginCredentials {
   name: string;
   role: UserRole;
+}
+
+export interface OrderItem {
+  productId: string;
+  quantity: number;
+  price: number;
+}
+
+export interface Order {
+  id: string;
+  buyerId: string;
+  sellerId: string;
+  items: OrderItem[];
+  totalAmount: number;
+  status: 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';
+  shippingAddress: string;
+  createdAt: string;
+  updatedAt: string;
 }
