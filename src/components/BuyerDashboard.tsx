@@ -2,16 +2,17 @@
 import { useEffect, useState } from "react";
 import { getApprovedProducts } from "@/services/product";
 import { Product } from "@/types";
-import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
-import { Search } from "lucide-react";
 import ProductCard from "./ProductCard";
+import ProductFilters from "./ProductFilters";
 
 const BuyerDashboard = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
+  const [sortBy, setSortBy] = useState("newest");
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
@@ -36,7 +37,7 @@ const BuyerDashboard = () => {
   }, [toast]);
 
   useEffect(() => {
-    let result = products;
+    let result = [...products];
     
     // Apply search filter
     if (searchQuery) {
@@ -44,24 +45,40 @@ const BuyerDashboard = () => {
       result = result.filter(
         product => 
           product.name.toLowerCase().includes(query) || 
-          product.description.toLowerCase().includes(query) ||
-          product.category.toLowerCase().includes(query)
+          product.description.toLowerCase().includes(query)
       );
     }
     
     // Apply category filter
-    if (selectedCategory) {
+    if (selectedCategory !== "all") {
       result = result.filter(product => product.category === selectedCategory);
     }
     
+    // Apply price filter
+    result = result.filter(
+      product => product.price >= priceRange[0] && product.price <= priceRange[1]
+    );
+    
+    // Apply sorting
+    result.sort((a, b) => {
+      switch (sortBy) {
+        case "price-asc":
+          return a.price - b.price;
+        case "price-desc":
+          return b.price - a.price;
+        case "newest":
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        case "oldest":
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        default:
+          return 0;
+      }
+    });
+    
     setFilteredProducts(result);
-  }, [searchQuery, selectedCategory, products]);
+  }, [searchQuery, selectedCategory, priceRange, sortBy, products]);
 
   const categories = [...new Set(products.map(product => product.category))];
-
-  const handleCategoryClick = (category: string) => {
-    setSelectedCategory(prev => prev === category ? null : category);
-  };
 
   if (isLoading) {
     return <div className="text-center py-10">Loading products...</div>;
@@ -76,54 +93,32 @@ const BuyerDashboard = () => {
         </p>
       </div>
       
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative w-full">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="search"
-            placeholder="Search products..."
-            className="w-full pl-8"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+      <div className="grid gap-6 md:grid-cols-[300px_1fr]">
+        <ProductFilters
+          onSearchChange={setSearchQuery}
+          onCategoryChange={setSelectedCategory}
+          onPriceRangeChange={setPriceRange}
+          onSortChange={setSortBy}
+          categories={categories}
+          priceRange={priceRange}
+          currentCategory={selectedCategory}
+          currentSort={sortBy}
+        />
+        
+        <div className="space-y-6">
+          {filteredProducts.length > 0 ? (
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {filteredProducts.map(product => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-10">
+              <p className="text-muted-foreground">No products found matching your criteria.</p>
+            </div>
+          )}
         </div>
       </div>
-      
-      <div className="flex flex-wrap gap-2">
-        {categories.map(category => (
-          <button
-            key={category}
-            onClick={() => handleCategoryClick(category)}
-            className={`px-3 py-1 rounded-full text-sm ${
-              selectedCategory === category
-                ? "bg-farm-green text-white"
-                : "bg-muted hover:bg-muted/80"
-            }`}
-          >
-            {category}
-          </button>
-        ))}
-        {selectedCategory && (
-          <button
-            onClick={() => setSelectedCategory(null)}
-            className="px-3 py-1 rounded-full text-sm bg-muted/60 hover:bg-muted/80"
-          >
-            Clear Filter
-          </button>
-        )}
-      </div>
-      
-      {filteredProducts.length > 0 ? (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredProducts.map(product => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-10">
-          <p className="text-muted-foreground">No products found matching your criteria.</p>
-        </div>
-      )}
     </div>
   );
 };
