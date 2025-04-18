@@ -66,7 +66,7 @@ const ProductFilters = ({
       <div className="space-y-2">
         <Label>Price Range (₹{priceRange[0]} - ₹{priceRange[1]})</Label>
         <Slider
-          defaultValue={[0, 1000]}
+          defaultValue={[priceRange[0], priceRange[1]]}
           max={1000}
           step={10}
           onValueChange={onPriceRangeChange}

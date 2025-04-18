@@ -80,6 +80,11 @@ const BuyerDashboard = () => {
 
   const categories = [...new Set(products.map(product => product.category))];
 
+  // Handler to properly update the price range state
+  const handlePriceRangeChange = (value: number[]) => {
+    setPriceRange([value[0], value[1]] as [number, number]);
+  };
+
   if (isLoading) {
     return <div className="text-center py-10">Loading products...</div>;
   }
@@ -97,7 +102,7 @@ const BuyerDashboard = () => {
         <ProductFilters
           onSearchChange={setSearchQuery}
           onCategoryChange={setSelectedCategory}
-          onPriceRangeChange={setPriceRange}
+          onPriceRangeChange={handlePriceRangeChange}
           onSortChange={setSortBy}
           categories={categories}
           priceRange={priceRange}
