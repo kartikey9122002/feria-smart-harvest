@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getCurrentUser } from "@/services/auth";
@@ -11,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, ShoppingCart, User, Map, Download, Phone, Mail, TrendingUp, LineChart, FileText } from "lucide-react";
 import { getProductById } from "@/services/product";
+import { generateProductReceipt } from "@/utils/receiptGenerator";
 
 const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -50,10 +50,13 @@ const ProductDetail = () => {
   };
 
   const handleDownloadReceipt = () => {
-    toast({
-      title: "Downloading receipt",
-      description: "Your receipt is being generated and downloaded.",
-    });
+    if (product) {
+      generateProductReceipt(product);
+      toast({
+        title: "Receipt downloaded",
+        description: "Your receipt has been generated and downloaded.",
+      });
+    }
   };
 
   if (isLoading) {
