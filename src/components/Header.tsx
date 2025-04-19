@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { getCurrentUser, logout } from "@/services/auth";
 import { UserRole } from "@/types";
-import { Home, ShoppingCart, Package, User, LogOut } from "lucide-react";
+import { Home, ShoppingCart, Package, User, LogOut, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const Header = () => {
@@ -31,8 +31,8 @@ const Header = () => {
         ];
       case "admin":
         return [
+          { path: "/admin", label: "Admin Panel", icon: <Shield className="mr-2 h-4 w-4" /> },
           { path: "/dashboard", label: "Dashboard", icon: <Home className="mr-2 h-4 w-4" /> },
-          { path: "/products", label: "Products", icon: <Package className="mr-2 h-4 w-4" /> },
           { path: "/profile", label: "Profile", icon: <User className="mr-2 h-4 w-4" /> }
         ];
       default:
