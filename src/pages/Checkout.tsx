@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
+import Map from '@/components/map/Map';
 import { OrderItem } from '@/types';
 
 const Checkout = () => {
@@ -19,15 +20,14 @@ const Checkout = () => {
   const { state, dispatch } = useCart();
   const user = getCurrentUser();
   const [address, setAddress] = useState('');
+  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Redirect to login if not authenticated
   if (!user) {
     navigate('/login');
     return null;
   }
 
-  // Redirect to cart if empty
   if (state.items.length === 0) {
     navigate('/cart');
     return null;
@@ -44,30 +44,38 @@ const Checkout = () => {
       });
       return;
     }
+
+    if (!location) {
+      toast({
+        title: "Error",
+        description: "Please select a delivery location on the map",
+        variant: "destructive",
+      });
+      return;
+    }
     
     setIsSubmitting(true);
     
     try {
-      // Convert cart items to order items
       const orderItems: OrderItem[] = state.items.map((item) => ({
         productId: item.product.id,
         quantity: item.quantity,
         price: item.product.price,
       }));
       
-      // Create order
-      const order = await createOrder(user.id, orderItems, address);
+      const order = await createOrder(
+        user.id, 
+        orderItems, 
+        address,
+      );
       
-      // Clear the cart
       dispatch({ type: 'CLEAR_CART' });
       
-      // Show success message
       toast({
         title: "Order Placed Successfully",
         description: `Your order #${order.id} has been placed.`,
       });
       
-      // Redirect to orders page
       navigate('/orders');
     } catch (error) {
       console.error('Error creating order:', error);
@@ -147,6 +155,13 @@ const Checkout = () => {
                       onChange={(e) => setAddress(e.target.value)}
                       required
                       rows={4}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>Select Delivery Location</Label>
+                    <Map 
+                      onLocationSelect={(coords) => setLocation(coords)}
                     />
                   </div>
                   

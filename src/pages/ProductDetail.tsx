@@ -7,6 +7,7 @@ import { generateProductReceipt } from "@/utils/receiptGenerator";
 import Header from "@/components/Header";
 import { getCurrentUser } from "@/services/auth";
 import ChatInterface from "@/components/chat/ChatInterface";
+import Map from "@/components/map/Map";
 
 const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -100,6 +101,7 @@ const ProductDetail = () => {
       <Header />
       <main className="flex-1 p-4 md:p-6 max-w-7xl mx-auto w-full">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Product Image */}
           <div className="md:col-span-1">
             <img
               src={product.images[0]}
@@ -107,6 +109,8 @@ const ProductDetail = () => {
               className="w-full rounded-md shadow-md"
             />
           </div>
+          
+          {/* Product Details */}
           <div className="md:col-span-1 space-y-4">
             <h1 className="text-3xl font-bold tracking-tight">{product.name}</h1>
             <p className="text-gray-600">Description: {product.description}</p>
@@ -124,8 +128,19 @@ const ProductDetail = () => {
             </Button>
           </div>
         </div>
+
+        {/* Seller Location */}
+        <div className="mt-8">
+          <h2 className="text-xl font-semibold mb-4">Seller Location</h2>
+          <div className="h-[400px]">
+            <Map 
+              initialLocation={{ lat: 28.6139, lng: 77.2090 }} // Demo coordinates, replace with actual seller location
+              readOnly
+            />
+          </div>
+        </div>
         
-        {/* Add Chat Interface */}
+        {/* Chat Interface */}
         {currentUser && product && currentUser.id !== product.sellerId && (
           <div className="fixed bottom-4 right-4">
             <ChatInterface otherUser={{
