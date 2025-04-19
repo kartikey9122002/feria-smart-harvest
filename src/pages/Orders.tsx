@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getOrdersByBuyer } from '@/services/order';
 import { getCurrentUser } from '@/services/auth';
@@ -8,12 +8,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { format } from 'date-fns';
-import { Order } from '@/types';
+import { Order, DeliveryStatus } from '@/types';
+import { Package, Truck, MapPin, Clock } from 'lucide-react';
 
 const Orders = () => {
   const user = getCurrentUser();
   
-  // Fetch orders for the current user
   const { data: orders, isLoading, error } = useQuery({
     queryKey: ['orders', user?.id],
     queryFn: () => getOrdersByBuyer(user?.id || ''),
@@ -34,6 +34,32 @@ const Orders = () => {
         return 'bg-red-100 text-red-800 hover:bg-red-100';
       default:
         return 'bg-gray-100 text-gray-800 hover:bg-gray-100';
+    }
+  };
+
+  const getDeliveryStatusIcon = (status: DeliveryStatus) => {
+    switch (status) {
+      case 'preparing':
+        return <Package className="h-4 w-4" />;
+      case 'in_transit':
+        return <Truck className="h-4 w-4" />;
+      case 'out_for_delivery':
+        return <MapPin className="h-4 w-4" />;
+      case 'delivered':
+        return <Clock className="h-4 w-4" />;
+    }
+  };
+
+  const getDeliveryStatusBadgeColor = (status: DeliveryStatus) => {
+    switch (status) {
+      case 'preparing':
+        return 'bg-blue-100 text-blue-800 hover:bg-blue-100';
+      case 'in_transit':
+        return 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100';
+      case 'out_for_delivery':
+        return 'bg-purple-100 text-purple-800 hover:bg-purple-100';
+      case 'delivered':
+        return 'bg-green-100 text-green-800 hover:bg-green-100';
     }
   };
 
@@ -75,13 +101,24 @@ const Orders = () => {
                       {format(new Date(order.createdAt), 'PPP')}
                     </CardDescription>
                   </div>
-                  <Badge className={getStatusBadgeColor(order.status)}>
-                    {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge className={getStatusBadgeColor(order.status)}>
+                      {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                    </Badge>
+                    <Badge className={getDeliveryStatusBadgeColor(order.deliveryStatus)}>
+                      <span className="flex items-center gap-1">
+                        {getDeliveryStatusIcon(order.deliveryStatus)}
+                        {order.deliveryStatus.split('_').map(word => 
+                          word.charAt(0).toUpperCase() + word.slice(1)
+                        ).join(' ')}
+                      </span>
+                    </Badge>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="pt-6">
                 <div className="space-y-4">
+                  {/* Order Items */}
                   {order.items.map((item, index) => (
                     <div key={index} className="flex justify-between items-center">
                       <div>
@@ -94,14 +131,29 @@ const Orders = () => {
                     </div>
                   ))}
                   <Separator />
-                  <div className="flex justify-between items-center pt-2">
-                    <p className="font-semibold">Total</p>
-                    <p className="font-semibold">₹{order.totalAmount}</p>
-                  </div>
-                  <div className="pt-4">
-                    <p className="text-sm text-muted-foreground">
+                  
+                  {/* Delivery Information */}
+                  <div className="bg-muted/30 p-4 rounded-lg space-y-2">
+                    <h4 className="font-semibold">Delivery Information</h4>
+                    {order.trackingNumber && (
+                      <p className="text-sm">
+                        <span className="font-medium">Tracking Number:</span> {order.trackingNumber}
+                      </p>
+                    )}
+                    {order.estimatedDeliveryDate && (
+                      <p className="text-sm">
+                        <span className="font-medium">Estimated Delivery:</span>{' '}
+                        {format(new Date(order.estimatedDeliveryDate), 'PPP')}
+                      </p>
+                    )}
+                    <p className="text-sm">
                       <span className="font-medium">Shipping Address:</span> {order.shippingAddress}
                     </p>
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <p className="font-semibold">Total</p>
+                    <p className="font-semibold">₹{order.totalAmount}</p>
                   </div>
                 </div>
               </CardContent>

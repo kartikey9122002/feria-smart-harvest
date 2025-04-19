@@ -39,6 +39,9 @@ export interface RegisterData extends LoginCredentials {
   role: UserRole;
 }
 
+export type OrderStatus = 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';
+export type DeliveryStatus = 'preparing' | 'in_transit' | 'out_for_delivery' | 'delivered';
+
 export interface OrderItem {
   productId: string;
   quantity: number;
@@ -51,8 +54,12 @@ export interface Order {
   sellerId: string;
   items: OrderItem[];
   totalAmount: number;
-  status: 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';
+  status: OrderStatus;
   shippingAddress: string;
   createdAt: string;
   updatedAt: string;
+  deliveryStatus: DeliveryStatus;
+  estimatedDeliveryDate?: string;
+  trackingNumber?: string;
+  deliveryNotes?: string;
 }

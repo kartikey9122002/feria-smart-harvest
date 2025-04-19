@@ -1,7 +1,5 @@
+import { Order, OrderItem, OrderStatus, DeliveryStatus } from "@/types";
 
-import { Order, OrderItem } from "@/types";
-
-// Mock orders data
 const MOCK_ORDERS: Order[] = [];
 
 export const createOrder = async (
@@ -9,7 +7,6 @@ export const createOrder = async (
   items: OrderItem[],
   shippingAddress: string
 ): Promise<Order> => {
-  // Simulate API request delay
   await new Promise(resolve => setTimeout(resolve, 800));
   
   const totalAmount = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -17,13 +14,16 @@ export const createOrder = async (
   const newOrder: Order = {
     id: `${MOCK_ORDERS.length + 1}`,
     buyerId,
-    sellerId: "1", // For demo, using fixed seller ID
+    sellerId: "1",
     items,
     totalAmount,
     status: 'pending',
+    deliveryStatus: 'preparing',
     shippingAddress,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
+    trackingNumber: `TRK${Math.random().toString(36).substring(7).toUpperCase()}`,
+    estimatedDeliveryDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
   };
   
   MOCK_ORDERS.push(newOrder);
@@ -42,7 +42,8 @@ export const getOrdersBySeller = async (sellerId: string): Promise<Order[]> => {
 
 export const updateOrderStatus = async (
   orderId: string, 
-  status: Order['status']
+  status: OrderStatus,
+  deliveryStatus?: DeliveryStatus
 ): Promise<Order> => {
   await new Promise(resolve => setTimeout(resolve, 800));
   
@@ -52,6 +53,7 @@ export const updateOrderStatus = async (
   MOCK_ORDERS[orderIndex] = {
     ...MOCK_ORDERS[orderIndex],
     status,
+    ...(deliveryStatus && { deliveryStatus }),
     updatedAt: new Date().toISOString(),
   };
   
