@@ -1,7 +1,10 @@
-
 import React from 'react';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/use-toast";
+import { Mic, MicOff } from "lucide-react";
+import { useVoiceSearch } from "@/hooks/useVoiceSearch";
 import {
   Select,
   SelectContent,
@@ -33,15 +36,45 @@ const ProductFilters = ({
   currentCategory,
   currentSort
 }: ProductFiltersProps) => {
+  const { toast } = useToast();
+  const { isListening, startListening } = useVoiceSearch({
+    onResult: (transcript) => {
+      onSearchChange(transcript);
+    },
+    onError: (error) => {
+      toast({
+        title: "Voice Search Error",
+        description: error,
+        variant: "destructive",
+      });
+    }
+  });
+
   return (
     <div className="space-y-6 p-4 bg-card rounded-lg shadow-sm">
       <div className="space-y-2">
         <Label htmlFor="search">Search Products</Label>
-        <Input
-          id="search"
-          placeholder="Search by name or description..."
-          onChange={(e) => onSearchChange(e.target.value)}
-        />
+        <div className="flex gap-2">
+          <div className="flex-1">
+            <Input
+              id="search"
+              placeholder="Search by name or description..."
+              onChange={(e) => onSearchChange(e.target.value)}
+            />
+          </div>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={startListening}
+            className={isListening ? "bg-primary text-primary-foreground" : ""}
+          >
+            {isListening ? (
+              <MicOff className="h-4 w-4" />
+            ) : (
+              <Mic className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
       </div>
 
       <div className="space-y-2">
