@@ -5,14 +5,28 @@ import { getCurrentUser, logout } from "@/services/auth";
 import { UserRole } from "@/types";
 import { Home, ShoppingCart, Package, User, LogOut, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "@/components/ui/use-toast";
 
 const Header = () => {
   const user = getCurrentUser();
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   const handleLogout = () => {
     logout();
     navigate("/");
+  };
+
+  const handleAdminAccess = () => {
+    if (user && user.role === "admin") {
+      navigate("/admin");
+    } else {
+      toast({
+        title: "Access Denied",
+        description: "Only admin users can access the admin panel.",
+        variant: "destructive",
+      });
+    }
   };
 
   const getNavigationItems = (role: UserRole) => {
@@ -31,7 +45,7 @@ const Header = () => {
         ];
       case "admin":
         return [
-          { path: "/admin", label: "Admin Panel", icon: <Shield className="mr-2 h-4 w-4" /> },
+          { path: "/admin", label: "Admin Panel", icon: <Shield className="mr-2 h-4 w-4" />, highlight: true },
           { path: "/dashboard", label: "Dashboard", icon: <Home className="mr-2 h-4 w-4" /> },
           { path: "/profile", label: "Profile", icon: <User className="mr-2 h-4 w-4" /> }
         ];
@@ -56,7 +70,9 @@ const Header = () => {
                 <Link
                   key={item.path}
                   to={item.path}
-                  className="flex items-center text-sm font-medium transition-colors hover:text-primary"
+                  className={`flex items-center text-sm font-medium transition-colors hover:text-primary ${
+                    item.highlight ? 'text-farm-green font-bold' : ''
+                  }`}
                 >
                   {item.icon}
                   {item.label}
@@ -66,6 +82,11 @@ const Header = () => {
 
             <div className="ml-auto flex items-center space-x-4">
               <div className="flex items-center">
+                {user.role === "admin" && (
+                  <span className="bg-farm-green text-white text-xs px-2 py-1 rounded-full mr-2">
+                    Admin
+                  </span>
+                )}
                 <span className="text-sm mr-2">{user.name}</span>
                 <Button 
                   variant="outline" 

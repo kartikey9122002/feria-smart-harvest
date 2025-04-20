@@ -5,6 +5,8 @@ import { getCurrentUser } from "@/services/auth";
 import SellerDashboard from "@/components/SellerDashboard";
 import BuyerDashboard from "@/components/BuyerDashboard";
 import Header from "@/components/Header";
+import { Button } from "@/components/ui/button";
+import { Shield } from "lucide-react";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -27,10 +29,19 @@ const Dashboard = () => {
         {user.role === "seller" && <SellerDashboard />}
         {user.role === "buyer" && <BuyerDashboard />}
         {user.role === "admin" && (
-          <div className="text-center py-10">
-            <h2 className="text-3xl font-bold tracking-tight">Admin Dashboard</h2>
-            <p className="text-muted-foreground mt-2">
-              Admin features not implemented in this version.
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-3xl font-bold tracking-tight">Admin Dashboard</h2>
+              <Button 
+                onClick={() => navigate("/admin")}
+                className="bg-farm-green hover:bg-farm-green-dark flex items-center gap-2"
+              >
+                <Shield className="h-4 w-4" />
+                Go to Admin Panel
+              </Button>
+            </div>
+            <p className="text-muted-foreground">
+              Welcome to the admin dashboard. Use the button above or the navigation link to access the full admin panel.
             </p>
           </div>
         )}

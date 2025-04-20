@@ -11,6 +11,9 @@ const Login = () => {
       <div className="flex-1 flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           <AuthForm type="login" />
+          <div className="mt-4 text-center text-sm text-muted-foreground">
+            <p>Admin demo: email: admin@example.com / password: password123</p>
+          </div>
         </div>
       </div>
     </div>
