@@ -2,10 +2,11 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Product } from "@/types";
-import { Package, ShoppingCart, AlertCircle, CheckCircle, XCircle } from "lucide-react";
+import { Package, ShoppingCart, AlertCircle, CheckCircle, XCircle, ReceiptText } from "lucide-react";
 import { Link } from "react-router-dom";
 import { getCurrentUser } from "@/services/auth";
 import ChatInterface from "./chat/ChatInterface";
+import { generateProductReceipt } from "@/utils/receiptGenerator";
 
 interface ProductCardProps {
   product: Product;
@@ -60,13 +61,21 @@ const ProductCard = ({ product, onStatusChange, onDelete, showChatButton = false
             {showChatButton && (
               <ChatInterface 
                 otherUser={{
-                  id: "buyer-1", // This would come from actual buyer data in a real app
+                  id: "buyer-1",
                   name: "Buyer",
                   email: "buyer@example.com",
                   role: "buyer"
                 }}
               />
             )}
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex-1"
+              onClick={() => generateProductReceipt(product)}
+            >
+              <ReceiptText className="mr-1 h-4 w-4" /> Download Receipt
+            </Button>
             {product.status === "approved" && (
               <Button 
                 variant="outline" 
