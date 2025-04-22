@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { getProductsBySeller, updateProductStatus, deleteProduct } from "@/services/product";
@@ -8,6 +7,7 @@ import { Package, TrendingUp, Clock, AlertTriangle, Plus } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { Link } from "react-router-dom";
 import ProductCard from "./ProductCard";
+import GovernmentSchemes from "./seller/GovernmentSchemes";
 
 const SellerDashboard = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -130,6 +130,8 @@ const SellerDashboard = () => {
           </CardContent>
         </Card>
       </div>
+      
+      <GovernmentSchemes />
       
       <div className="space-y-4">
         {pendingProducts.length > 0 && (
