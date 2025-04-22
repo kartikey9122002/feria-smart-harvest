@@ -144,6 +144,7 @@ const SellerDashboard = () => {
                   product={product} 
                   onStatusChange={handleStatusChange}
                   onDelete={handleDelete}
+                  showChatButton={false}
                 />
               ))}
             </div>
@@ -160,6 +161,7 @@ const SellerDashboard = () => {
                   product={product} 
                   onStatusChange={handleStatusChange}
                   onDelete={handleDelete}
+                  showChatButton={true}
                 />
               ))}
             </div>

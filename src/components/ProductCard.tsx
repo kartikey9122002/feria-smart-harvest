@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -6,14 +5,16 @@ import { Product } from "@/types";
 import { Package, ShoppingCart, AlertCircle, CheckCircle, XCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { getCurrentUser } from "@/services/auth";
+import ChatInterface from "./chat/ChatInterface";
 
 interface ProductCardProps {
   product: Product;
   onStatusChange?: (id: string, status: 'approved' | 'rejected' | 'unavailable') => void;
   onDelete?: (id: string) => void;
+  showChatButton?: boolean;
 }
 
-const ProductCard = ({ product, onStatusChange, onDelete }: ProductCardProps) => {
+const ProductCard = ({ product, onStatusChange, onDelete, showChatButton = false }: ProductCardProps) => {
   const user = getCurrentUser();
   
   const getStatusBadge = (status: string) => {
@@ -56,6 +57,16 @@ const ProductCard = ({ product, onStatusChange, onDelete }: ProductCardProps) =>
       <CardFooter className="pt-2 flex flex-wrap gap-2">
         {user?.role === "seller" && (
           <>
+            {showChatButton && (
+              <ChatInterface 
+                otherUser={{
+                  id: "buyer-1", // This would come from actual buyer data in a real app
+                  name: "Buyer",
+                  email: "buyer@example.com",
+                  role: "buyer"
+                }}
+              />
+            )}
             {product.status === "approved" && (
               <Button 
                 variant="outline" 
