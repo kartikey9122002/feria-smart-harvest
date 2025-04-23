@@ -3,9 +3,11 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { CartProvider } from "@/contexts/CartContext";
-import { AuthProvider } from "@/hooks/useAuth";
+import { AuthProvider, useAuth } from "@/hooks/useAuth";
+import { useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -20,11 +22,38 @@ import Cart from "./pages/Cart";
 import Orders from "./pages/Orders";
 import Checkout from "./pages/Checkout";
 
+// Properly implemented as React component
 const ProtectedAdminRoute = () => {
-  // use new useAuth hook
-  // fallback to redirect if not admin
-  const { profile } = require("@/hooks/useAuth").useAuth();
+  const { profile } = useAuth();
   return profile && profile.role === "admin" ? <AdminDashboard /> : <Navigate to="/dashboard" />;
+};
+
+// Add a Supabase test component to verify connection
+const SupabaseTest = () => {
+  console.log("Testing Supabase connection from component...");
+  const { user, profile } = useAuth();
+  
+  useEffect(() => {
+    // This will show in the console if Supabase connection is working
+    console.log("Supabase auth state:", { user, profile });
+    
+    const testDatabase = async () => {
+      try {
+        const { data, error } = await supabase.from("profiles").select("*").limit(1);
+        if (error) {
+          console.error("Supabase DB test failed:", error);
+        } else {
+          console.log("Supabase DB test success:", data);
+        }
+      } catch (err) {
+        console.error("Supabase test error:", err);
+      }
+    };
+    
+    testDatabase();
+  }, [user]);
+  
+  return null; // This component doesn't render anything
 };
 
 const queryClient = new QueryClient();
@@ -37,6 +66,7 @@ const App = () => (
           <AuthProvider>
             <Toaster />
             <Sonner />
+            <SupabaseTest />
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
