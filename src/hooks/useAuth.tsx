@@ -120,35 +120,63 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const userId = signUpData.user?.id;
       if (!userId) throw new Error("User registration failed");
 
-      // 3. Insert profile record using service role to bypass RLS
-      // Note: In a production environment, this should be done in a secure server-side function
-      // For now we'll use direct insertion which will work if no restrictive RLS is applied
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .insert([
-          {
-            id: userId,
-            name: data.name,
-            email: data.email,
-            avatar_url: null,
-            role: data.role,
-          },
-        ]);
+      // 3. Create profile record - try/catch separately to provide better error handling
+      try {
+        const { error: profileError } = await supabase
+          .from("profiles")
+          .insert([
+            {
+              id: userId,
+              name: data.name,
+              email: data.email,
+              avatar_url: null,
+              role: data.role,
+            },
+          ]);
 
-      if (profileError) {
-        console.error("Profile creation error:", profileError);
+        if (profileError) {
+          console.error("Profile creation error:", profileError);
+          
+          // Special handling for RLS errors - verify if profile exists despite the error
+          if (profileError.code === "42501") {
+            console.log("RLS error - checking if profile was created anyway...");
+            const { data: checkProfile } = await supabase
+              .from("profiles")
+              .select("*")
+              .eq("id", userId)
+              .single();
+              
+            if (checkProfile) {
+              console.log("Profile exists despite RLS error:", checkProfile);
+              // Profile exists, no need to throw an error
+              toast({
+                title: "Registration successful",
+                description: "Your account has been created. You can now log in.",
+              });
+              return;
+            }
+          }
+          
+          // If we reach here, there was a real error
+          toast({
+            title: "Profile creation failed",
+            description: profileError.message || "Could not create profile. Please contact support.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Registration successful",
+            description: "Your account has been created successfully!",
+          });
+        }
+      } catch (profileCreationError: any) {
+        console.error("Profile creation exception:", profileCreationError);
         toast({
           title: "Profile creation failed",
-          description: profileError.message || "Could not create profile. Please contact support.",
+          description: "An unexpected error occurred. Please try again later.",
           variant: "destructive",
         });
-        throw profileError;
       }
-
-      toast({
-        title: "Registration successful",
-        description: "Your account has been created successfully!",
-      });
     } catch (error: any) {
       toast({
         title: "Registration failed",

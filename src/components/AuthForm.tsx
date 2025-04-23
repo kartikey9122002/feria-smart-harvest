@@ -34,10 +34,12 @@ const AuthForm = ({ type }: AuthFormProps) => {
   const [name, setName] = useState("");
   const [role, setRole] = useState<UserRole>("buyer");
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setIsSubmitting(true);
 
     try {
       if (type === "login") {
@@ -48,16 +50,22 @@ const AuthForm = ({ type }: AuthFormProps) => {
         });
         navigate("/dashboard");
       } else {
+        if (password.length < 6) {
+          setError("Password must be at least 6 characters");
+          setIsSubmitting(false);
+          return;
+        }
+        
         await signUp({ email, password, name, role });
-        toast({
-          title: "Registration successful",
-          description: "Your account has been created.",
-        });
-        navigate("/dashboard");
+        // After successful signup, redirect to login page
+        navigate("/login");
       }
     } catch (error: any) {
+      console.error("Auth error:", error);
       setError(error.message || "An error occurred");
       // Toast is already shown in the auth provider
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -114,7 +122,11 @@ const AuthForm = ({ type }: AuthFormProps) => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              minLength={6}
             />
+            {type === "register" && (
+              <p className="text-xs text-muted-foreground">Password must be at least 6 characters</p>
+            )}
           </div>
 
           {type === "register" && (
@@ -141,10 +153,10 @@ const AuthForm = ({ type }: AuthFormProps) => {
           <Button
             type="submit"
             className="w-full bg-farm-green hover:bg-farm-green-dark"
-            disabled={isLoading}
+            disabled={isLoading || isSubmitting}
           >
-            {isLoading
-              ? "Loading..."
+            {isLoading || isSubmitting
+              ? "Processing..."
               : type === "login"
               ? "Login"
               : "Create Account"}
