@@ -1,21 +1,37 @@
+
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Product } from "@/types";
+import { Product, User } from "@/types";
 import { Package, ShoppingCart, AlertCircle, CheckCircle, XCircle, ReceiptText } from "lucide-react";
 import { Link } from "react-router-dom";
 import { getCurrentUser } from "@/services/auth";
 import ChatInterface from "./chat/ChatInterface";
-import { generateProductReceipt } from "@/utils/receiptGenerator";
+import { generateProductReceiptsWithBuyers } from "@/utils/receiptGenerator";
+
+interface BuyerInfo {
+  buyerId: string;
+  buyerName: string;
+  buyerEmail: string;
+  quantity: number;
+  date: string; // ISO string
+}
 
 interface ProductCardProps {
   product: Product;
   onStatusChange?: (id: string, status: 'approved' | 'rejected' | 'unavailable') => void;
   onDelete?: (id: string) => void;
   showChatButton?: boolean;
+  buyers?: BuyerInfo[];
 }
 
-const ProductCard = ({ product, onStatusChange, onDelete, showChatButton = false }: ProductCardProps) => {
+const ProductCard = ({
+  product,
+  onStatusChange,
+  onDelete,
+  showChatButton = false,
+  buyers = [],
+}: ProductCardProps) => {
   const user = getCurrentUser();
   
   const getStatusBadge = (status: string) => {
@@ -32,6 +48,8 @@ const ProductCard = ({ product, onStatusChange, onDelete, showChatButton = false
         return null;
     }
   };
+
+  const hasBuyers = buyers && buyers.length > 0;
 
   return (
     <Card className="h-full flex flex-col">
@@ -68,14 +86,17 @@ const ProductCard = ({ product, onStatusChange, onDelete, showChatButton = false
                 }}
               />
             )}
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="flex-1"
-              onClick={() => generateProductReceipt(product)}
-            >
-              <ReceiptText className="mr-1 h-4 w-4" /> Download Receipt
-            </Button>
+            {/* Show one button for ALL buyers of this product */}
+            {hasBuyers && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1"
+                onClick={() => generateProductReceiptsWithBuyers(product, buyers)}
+              >
+                <ReceiptText className="mr-1 h-4 w-4" /> Download Product Receipts
+              </Button>
+            )}
             {product.status === "approved" && (
               <Button 
                 variant="outline" 
@@ -150,3 +171,4 @@ const ProductCard = ({ product, onStatusChange, onDelete, showChatButton = false
 };
 
 export default ProductCard;
+

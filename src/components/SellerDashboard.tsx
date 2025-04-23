@@ -8,22 +8,29 @@ import { useToast } from "@/components/ui/use-toast";
 import { Link } from "react-router-dom";
 import ProductCard from "./ProductCard";
 import GovernmentSchemes from "./seller/GovernmentSchemes";
+import { getOrdersBySeller, getCurrentUser } from "@/services/order";
 
 const SellerDashboard = () => {
   const [products, setProducts] = useState<Product[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-  const sellerId = "1"; // In a real app, this would come from the authenticated user
+  const user = getCurrentUser();
+  const sellerId = user?.id || "1";
 
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchProductsAndOrders = async () => {
       try {
-        const fetchedProducts = await getProductsBySeller(sellerId);
+        const [fetchedProducts, fetchedOrders] = await Promise.all([
+          getProductsBySeller(sellerId),
+          getOrdersBySeller(sellerId),
+        ]);
         setProducts(fetchedProducts);
+        setOrders(fetchedOrders);
       } catch (error) {
         toast({
-          title: "Error fetching products",
-          description: "Could not load your products. Please try again.",
+          title: "Error fetching data",
+          description: "Could not load your products or orders. Please try again.",
           variant: "destructive",
         });
       } finally {
@@ -31,7 +38,7 @@ const SellerDashboard = () => {
       }
     };
 
-    fetchProducts();
+    fetchProductsAndOrders();
   }, [sellerId, toast]);
 
   const handleStatusChange = async (id: string, status: 'approved' | 'rejected' | 'unavailable') => {
@@ -73,6 +80,29 @@ const SellerDashboard = () => {
   if (isLoading) {
     return <div className="text-center py-10">Loading your products...</div>;
   }
+
+  const productBuyers: Record<string, Array<{
+    buyerId: string;
+    buyerName: string;
+    buyerEmail: string;
+    quantity: number;
+    date: string;
+  }>> = {};
+
+  orders.forEach(order => {
+    order.items.forEach((item: any) => {
+      if (!productBuyers[item.productId]) {
+        productBuyers[item.productId] = [];
+      }
+      productBuyers[item.productId].push({
+        buyerId: order.buyerId,
+        buyerName: order.buyerName || "Unknown Buyer",
+        buyerEmail: order.buyerEmail || "",
+        quantity: item.quantity,
+        date: order.createdAt,
+      });
+    });
+  });
 
   const approvedProducts = products.filter(p => p.status === 'approved');
   const pendingProducts = products.filter(p => p.status === 'pending');
@@ -145,6 +175,7 @@ const SellerDashboard = () => {
                   onStatusChange={handleStatusChange}
                   onDelete={handleDelete}
                   showChatButton={false}
+                  buyers={productBuyers[product.id] || []}
                 />
               ))}
             </div>
@@ -162,6 +193,7 @@ const SellerDashboard = () => {
                   onStatusChange={handleStatusChange}
                   onDelete={handleDelete}
                   showChatButton={true}
+                  buyers={productBuyers[product.id] || []}
                 />
               ))}
             </div>
@@ -178,6 +210,7 @@ const SellerDashboard = () => {
                   product={product} 
                   onStatusChange={handleStatusChange}
                   onDelete={handleDelete}
+                  buyers={productBuyers[product.id] || []}
                 />
               ))}
             </div>
