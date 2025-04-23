@@ -16,6 +16,8 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/components/ui/use-toast";
 import { UserRole } from "@/types";
+import { AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface AuthFormProps {
   type: "login" | "register";
@@ -31,9 +33,11 @@ const AuthForm = ({ type }: AuthFormProps) => {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [role, setRole] = useState<UserRole>("buyer");
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
 
     try {
       if (type === "login") {
@@ -42,20 +46,18 @@ const AuthForm = ({ type }: AuthFormProps) => {
           title: "Login successful",
           description: "Welcome back to FarmFeria!",
         });
+        navigate("/dashboard");
       } else {
         await signUp({ email, password, name, role });
         toast({
           title: "Registration successful",
           description: "Your account has been created.",
         });
+        navigate("/dashboard");
       }
-      navigate("/dashboard");
     } catch (error: any) {
-      toast({
-        title: "Authentication error",
-        description: error.message || "An error occurred",
-        variant: "destructive",
-      });
+      setError(error.message || "An error occurred");
+      // Toast is already shown in the auth provider
     }
   };
 
@@ -71,6 +73,13 @@ const AuthForm = ({ type }: AuthFormProps) => {
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
           {type === "register" && (
             <div className="space-y-2">
               <Label htmlFor="name">Name</Label>
