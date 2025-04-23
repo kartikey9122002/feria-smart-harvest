@@ -1,7 +1,7 @@
 
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { getCurrentUser } from "@/services/auth";
+import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Header from "@/components/Header";
@@ -9,16 +9,16 @@ import { User, Mail, UserCircle, Edit } from "lucide-react";
 
 const Profile = () => {
   const navigate = useNavigate();
-  const user = getCurrentUser();
+  const { profile, isLoading } = useAuth();
 
   useEffect(() => {
-    if (!user) {
+    if (!isLoading && !profile) {
       navigate("/login");
     }
-  }, [user, navigate]);
+  }, [profile, isLoading, navigate]);
 
-  if (!user) {
-    return null; // Will redirect in useEffect
+  if (isLoading || !profile) {
+    return null; // Will redirect in useEffect or still loading
   }
 
   return (
@@ -42,7 +42,7 @@ const Profile = () => {
                   <div>
                     <p className="text-sm text-muted-foreground">Profile Picture</p>
                     <div className="mt-2">
-                      <Button variant="outline" size="sm" className="text-xs">
+                      <Button variant="outline" size="sm" className="text-xs" disabled>
                         <Edit className="mr-2 h-3 w-3" />
                         Change
                       </Button>
@@ -50,7 +50,7 @@ const Profile = () => {
                   </div>
                 </div>
                 <div>
-                  <Button className="bg-farm-green hover:bg-farm-green-dark">
+                  <Button className="bg-farm-green hover:bg-farm-green-dark" disabled>
                     <Edit className="mr-2 h-4 w-4" />
                     Edit Profile
                   </Button>
@@ -62,7 +62,7 @@ const Profile = () => {
                   <User className="h-4 w-4 text-muted-foreground" />
                   <div className="grid gap-1">
                     <p className="text-sm text-muted-foreground">Name</p>
-                    <p className="font-medium">{user.name}</p>
+                    <p className="font-medium">{profile.name}</p>
                   </div>
                 </div>
                 
@@ -70,7 +70,7 @@ const Profile = () => {
                   <Mail className="h-4 w-4 text-muted-foreground" />
                   <div className="grid gap-1">
                     <p className="text-sm text-muted-foreground">Email</p>
-                    <p className="font-medium">{user.email}</p>
+                    <p className="font-medium">{profile.email}</p>
                   </div>
                 </div>
                 
@@ -78,7 +78,7 @@ const Profile = () => {
                   <div className="h-4 w-4 rounded bg-farm-green" />
                   <div className="grid gap-1">
                     <p className="text-sm text-muted-foreground">Account Type</p>
-                    <p className="font-medium capitalize">{user.role}</p>
+                    <p className="font-medium capitalize">{profile.role}</p>
                   </div>
                 </div>
               </div>
@@ -91,7 +91,7 @@ const Profile = () => {
               <CardDescription>Manage your password and security preferences</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Button variant="outline">Change Password</Button>
+              <Button variant="outline" disabled>Change Password</Button>
             </CardContent>
           </Card>
         </div>

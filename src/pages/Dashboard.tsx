@@ -1,7 +1,7 @@
 
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { getCurrentUser } from "@/services/auth";
+import { useAuth } from "@/hooks/useAuth";
 import SellerDashboard from "@/components/SellerDashboard";
 import BuyerDashboard from "@/components/BuyerDashboard";
 import Header from "@/components/Header";
@@ -10,25 +10,25 @@ import { Shield } from "lucide-react";
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const user = getCurrentUser();
+  const { profile, isLoading } = useAuth();
 
   useEffect(() => {
-    if (!user) {
+    if (!isLoading && !profile) {
       navigate("/login");
     }
-  }, [user, navigate]);
+  }, [profile, isLoading, navigate]);
 
-  if (!user) {
-    return null; // Will redirect in useEffect
+  if (isLoading || !profile) {
+    return null; // Will redirect or still loading
   }
 
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1 p-4 md:p-6 max-w-7xl mx-auto w-full">
-        {user.role === "seller" && <SellerDashboard />}
-        {user.role === "buyer" && <BuyerDashboard />}
-        {user.role === "admin" && (
+        {profile.role === "seller" && <SellerDashboard />}
+        {profile.role === "buyer" && <BuyerDashboard />}
+        {profile.role === "admin" && (
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <h2 className="text-3xl font-bold tracking-tight">Admin Dashboard</h2>

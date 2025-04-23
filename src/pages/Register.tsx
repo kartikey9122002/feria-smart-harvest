@@ -1,8 +1,19 @@
 
 import AuthForm from "@/components/AuthForm";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { useEffect } from "react";
 
 const Register = () => {
+  const { user, profile } = useAuth();
+
+  useEffect(() => {
+    // If user logged in, redirect
+    if (user && profile) {
+      window.location.replace("/dashboard");
+    }
+  }, [user, profile]);
+
   return (
     <div className="min-h-screen flex flex-col">
       <div className="py-4 px-4 border-b">

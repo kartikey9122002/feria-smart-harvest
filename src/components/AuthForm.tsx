@@ -13,7 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { login, register } from "@/services/auth";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/components/ui/use-toast";
 import { UserRole } from "@/types";
 
@@ -24,8 +24,8 @@ interface AuthFormProps {
 const AuthForm = ({ type }: AuthFormProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
-  
+  const { signIn, signUp, isLoading } = useAuth();
+
   // Form state
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -34,31 +34,28 @@ const AuthForm = ({ type }: AuthFormProps) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
 
     try {
       if (type === "login") {
-        await login({ email, password });
+        await signIn(email, password);
         toast({
           title: "Login successful",
           description: "Welcome back to FarmFeria!",
         });
       } else {
-        await register({ email, password, name, role });
+        await signUp({ email, password, name, role });
         toast({
           title: "Registration successful",
           description: "Your account has been created.",
         });
       }
       navigate("/dashboard");
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Authentication error",
-        description: error instanceof Error ? error.message : "An error occurred",
+        description: error.message || "An error occurred",
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 

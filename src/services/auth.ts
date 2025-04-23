@@ -1,3 +1,7 @@
+// This file is now deprecated. Use useAuth hook from src/hooks/useAuth.tsx.
+console.warn(
+  "src/services/auth.ts is deprecated. Please use the useAuth hook from src/hooks/useAuth.tsx for real authentication."
+);
 
 import { LoginCredentials, RegisterData, User } from "@/types";
 

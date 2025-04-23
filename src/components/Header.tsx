@@ -1,22 +1,14 @@
-import { Link } from "react-router-dom";
+
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { getCurrentUser, logout } from "@/services/auth";
-import { UserRole } from "@/types";
+import { useAuth } from "@/hooks/useAuth";
 import { Home, ShoppingCart, Package, User, LogOut, Shield } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { useToast } from "@/components/ui/use-toast";
 
 const Header = () => {
-  const user = getCurrentUser();
+  const { profile, signOut } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
 
-  const handleLogout = () => {
-    logout();
-    navigate("/");
-  };
-
-  const getNavigationItems = (role: UserRole) => {
+  const getNavigationItems = (role: string) => {
     switch (role) {
       case "seller":
         return [
@@ -50,10 +42,10 @@ const Header = () => {
           </Link>
         </div>
 
-        {user ? (
+        {profile ? (
           <>
             <nav className="flex items-center space-x-4 lg:space-x-6 mx-6">
-              {getNavigationItems(user.role).map((item) => (
+              {getNavigationItems(profile.role).map((item) => (
                 <Link
                   key={item.path}
                   to={item.path}
@@ -69,7 +61,7 @@ const Header = () => {
 
             <div className="ml-auto flex items-center space-x-4">
               <div className="flex items-center">
-                {user.role === "admin" && (
+                {profile.role === "admin" && (
                   <Button 
                     variant="outline" 
                     size="sm" 
@@ -79,11 +71,11 @@ const Header = () => {
                     <Shield className="mr-1 h-4 w-4" /> Admin Panel
                   </Button>
                 )}
-                <span className="text-sm mr-2">{user.name}</span>
+                <span className="text-sm mr-2">{profile.name}</span>
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  onClick={handleLogout}
+                  onClick={signOut}
                   className="flex items-center"
                 >
                   <LogOut className="mr-2 h-4 w-4" />
