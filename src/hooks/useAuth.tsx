@@ -1,7 +1,7 @@
 
 import { useEffect, useState, createContext, useContext, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { User as SupabaseUser, Session } from "@supabase/supabase-js";
+import { User as SupabaseUser } from "@supabase/supabase-js";
 import { Profile } from "@/types/profile";
 import { useNavigate } from "react-router-dom";
 
@@ -99,7 +99,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
     setUser(null);
     setProfile(null);
-    navigate("/login");
+    if (navigate) {
+      navigate("/login");
+    } else {
+      window.location.href = "/login";
+    }
   }
 
   return (
