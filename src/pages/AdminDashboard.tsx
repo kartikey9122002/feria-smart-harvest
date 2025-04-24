@@ -1,6 +1,6 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getCurrentUser } from "@/services/auth";
 import { Product } from "@/types";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
@@ -11,22 +11,23 @@ import GovtSchemes from "@/components/admin/GovtSchemes";
 import { AdminStats } from "@/components/admin/AdminStats";
 import { AdminNav } from "@/components/admin/AdminNav";
 import { ProductApprovalList } from "@/components/admin/ProductApprovalList";
+import { useAuth } from "@/hooks/useAuth";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const user = getCurrentUser();
+  const { profile, isLoading } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loadingProducts, setLoadingProducts] = useState(true);
   const [activePage, setActivePage] = useState<'products' | 'schemes' | 'users'>('products');
 
   useEffect(() => {
-    if (!user) {
+    if (!isLoading && !profile) {
       navigate("/login");
       return;
     }
     
-    if (user.role !== "admin") {
+    if (!isLoading && profile && profile.role !== "admin") {
       navigate("/dashboard");
       toast({
         title: "Access Denied",
@@ -37,6 +38,8 @@ const AdminDashboard = () => {
     }
 
     const fetchProducts = async () => {
+      if (!profile) return;
+      
       try {
         const fetchedProducts = await getProductsForAdmin();
         setProducts(fetchedProducts);
@@ -47,12 +50,14 @@ const AdminDashboard = () => {
           variant: "destructive",
         });
       } finally {
-        setIsLoading(false);
+        setLoadingProducts(false);
       }
     };
 
-    fetchProducts();
-  }, [user, navigate, toast]);
+    if (profile?.role === "admin") {
+      fetchProducts();
+    }
+  }, [profile, isLoading, navigate, toast]);
 
   const handleStatusChange = async (id: string, status: 'approved' | 'rejected') => {
     try {
@@ -77,7 +82,15 @@ const AdminDashboard = () => {
   const approvedProducts = products.filter(p => p.status === 'approved');
   const rejectedProducts = products.filter(p => p.status === 'rejected');
 
-  if (isLoading) {
+  if (isLoading || !profile) {
+    return <div className="text-center py-10">Loading...</div>;
+  }
+
+  if (profile.role !== "admin") {
+    return null; // Will redirect in useEffect
+  }
+
+  if (loadingProducts) {
     return <div className="text-center py-10">Loading admin dashboard...</div>;
   }
 

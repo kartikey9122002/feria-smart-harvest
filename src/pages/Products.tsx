@@ -1,24 +1,22 @@
 
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { getCurrentUser } from "@/services/auth";
-import { useToast } from "@/components/ui/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import Header from "@/components/Header";
 import BuyerDashboard from "@/components/BuyerDashboard";
 import SellerDashboard from "@/components/SellerDashboard";
 
 const Products = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const user = getCurrentUser();
+  const { profile, isLoading } = useAuth();
 
   useEffect(() => {
-    if (!user) {
+    if (!isLoading && !profile) {
       navigate("/login");
     }
-  }, [user, navigate]);
+  }, [profile, isLoading, navigate]);
 
-  if (!user) {
+  if (isLoading || !profile) {
     return null; // Will redirect in useEffect
   }
 
@@ -28,9 +26,9 @@ const Products = () => {
     <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1 p-4 md:p-6 max-w-7xl mx-auto w-full">
-        {user.role === "seller" && <SellerDashboard />}
-        {user.role === "buyer" && <BuyerDashboard />}
-        {user.role === "admin" && (
+        {profile.role === "seller" && <SellerDashboard />}
+        {profile.role === "buyer" && <BuyerDashboard />}
+        {profile.role === "admin" && (
           <div className="text-center py-10">
             <h2 className="text-3xl font-bold tracking-tight">Product Management</h2>
             <p className="text-muted-foreground mt-2">
