@@ -9,6 +9,182 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      chat_messages: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          read: boolean | null
+          receiver_id: string
+          sender_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          read?: boolean | null
+          receiver_id: string
+          sender_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          read?: boolean | null
+          receiver_id?: string
+          sender_id?: string
+        }
+        Relationships: []
+      }
+      government_schemes: {
+        Row: {
+          created_at: string | null
+          description: string
+          eligibility: string | null
+          id: string
+          last_date: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description: string
+          eligibility?: string | null
+          id?: string
+          last_date?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string
+          eligibility?: string | null
+          id?: string
+          last_date?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      order_items: {
+        Row: {
+          created_at: string | null
+          id: string
+          order_id: string
+          price: number
+          product_id: string
+          quantity: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          order_id: string
+          price: number
+          product_id: string
+          quantity: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          order_id?: string
+          price?: number
+          product_id?: string
+          quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          buyer_id: string
+          created_at: string | null
+          delivery_status: string | null
+          id: string
+          is_first_order: boolean | null
+          seller_id: string
+          shipping_address: string
+          status: string
+          total_amount: number
+          tracking_location: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          buyer_id: string
+          created_at?: string | null
+          delivery_status?: string | null
+          id?: string
+          is_first_order?: boolean | null
+          seller_id: string
+          shipping_address: string
+          status?: string
+          total_amount: number
+          tracking_location?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          buyer_id?: string
+          created_at?: string | null
+          delivery_status?: string | null
+          id?: string
+          is_first_order?: boolean | null
+          seller_id?: string
+          shipping_address?: string
+          status?: string
+          total_amount?: number
+          tracking_location?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      price_history: {
+        Row: {
+          created_at: string | null
+          date: string
+          id: string
+          price: number
+          product_id: string
+          weather_condition: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          date: string
+          id?: string
+          price: number
+          product_id: string
+          weather_condition?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          date?: string
+          id?: string
+          price?: number
+          product_id?: string
+          weather_condition?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_history_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           category: string
@@ -16,6 +192,7 @@ export type Database = {
           description: string | null
           id: string
           images: string[]
+          inventory_count: number | null
           name: string
           price: number
           seller_id: string | null
@@ -29,6 +206,7 @@ export type Database = {
           description?: string | null
           id?: string
           images: string[]
+          inventory_count?: number | null
           name: string
           price: number
           seller_id?: string | null
@@ -42,6 +220,7 @@ export type Database = {
           description?: string | null
           id?: string
           images?: string[]
+          inventory_count?: number | null
           name?: string
           price?: number
           seller_id?: string | null
@@ -94,7 +273,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
