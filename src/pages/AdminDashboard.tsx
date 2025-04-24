@@ -16,18 +16,18 @@ import { useAuth } from "@/hooks/useAuth";
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { profile, isLoading } = useAuth();
+  const { profile, isLoading: authLoading } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [activePage, setActivePage] = useState<'products' | 'schemes' | 'users'>('products');
 
   useEffect(() => {
-    if (!isLoading && !profile) {
+    if (!authLoading && !profile) {
       navigate("/login");
       return;
     }
     
-    if (!isLoading && profile && profile.role !== "admin") {
+    if (!authLoading && profile && profile.role !== "admin") {
       navigate("/dashboard");
       toast({
         title: "Access Denied",
@@ -57,7 +57,7 @@ const AdminDashboard = () => {
     if (profile?.role === "admin") {
       fetchProducts();
     }
-  }, [profile, isLoading, navigate, toast]);
+  }, [profile, authLoading, navigate, toast]);
 
   const handleStatusChange = async (id: string, status: 'approved' | 'rejected') => {
     try {
@@ -82,15 +82,26 @@ const AdminDashboard = () => {
   const approvedProducts = products.filter(p => p.status === 'approved');
   const rejectedProducts = products.filter(p => p.status === 'rejected');
 
-  if (isLoading || !profile) {
-    return <div className="text-center py-10">Loading...</div>;
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]" />
+          <p className="mt-4 text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return null; // Will redirect in useEffect
   }
 
   if (profile.role !== "admin") {
     return null; // Will redirect in useEffect
   }
 
-  if (loadingProducts) {
+  if (loadingProducts && activePage === 'products') {
     return <div className="text-center py-10">Loading admin dashboard...</div>;
   }
 

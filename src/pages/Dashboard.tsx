@@ -7,6 +7,7 @@ import BuyerDashboard from "@/components/BuyerDashboard";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Shield } from "lucide-react";
+import { enableRealtimeTables } from "@/integrations/supabase/client";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -16,10 +17,24 @@ const Dashboard = () => {
     if (!isLoading && !profile) {
       navigate("/login");
     }
+
+    // Enable real-time updates for the database
+    enableRealtimeTables();
   }, [profile, isLoading, navigate]);
 
-  if (isLoading || !profile) {
-    return null; // Will redirect or still loading
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]" />
+          <p className="mt-4 text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return null; // Will redirect in useEffect
   }
 
   return (
