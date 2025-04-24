@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 import { User } from "@/types";
@@ -18,20 +17,11 @@ export const getChatMessages = async (currentUserId: string, otherUserId: string
     const { data, error } = await supabase
       .from("chat_messages")
       .select("*")
-      .or(`sender_id.eq.${currentUserId},receiver_id.eq.${currentUserId}`)
-      .or(`sender_id.eq.${otherUserId},receiver_id.eq.${otherUserId}`)
+      .or(`and(sender_id.eq.${currentUserId},receiver_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},receiver_id.eq.${currentUserId})`)
       .order("created_at", { ascending: true });
 
     if (error) throw error;
-    
-    // Filter to only include messages between these two users
-    const filteredMessages = data.filter(
-      (msg) => 
-        (msg.sender_id === currentUserId && msg.receiver_id === otherUserId) || 
-        (msg.sender_id === otherUserId && msg.receiver_id === currentUserId)
-    );
-    
-    return filteredMessages;
+    return data;
   } catch (error) {
     console.error("Error fetching chat messages:", error);
     toast({
@@ -119,27 +109,26 @@ export const subscribeToMessages = (
 // Get a list of users the current user has chatted with
 export const getChatUsers = async (currentUserId: string): Promise<User[]> => {
   try {
-    const { data: sentMessages, error: sentError } = await supabase
+    // Get unique user IDs from sent and received messages
+    const { data: senderIds, error: sentError } = await supabase
       .from("chat_messages")
       .select("receiver_id")
-      .eq("sender_id", currentUserId)
-      .distinct();
+      .eq("sender_id", currentUserId);
 
-    const { data: receivedMessages, error: receivedError } = await supabase
+    const { data: receiverIds, error: receivedError } = await supabase
       .from("chat_messages")
       .select("sender_id")
-      .eq("receiver_id", currentUserId)
-      .distinct();
+      .eq("receiver_id", currentUserId);
 
     if (sentError || receivedError) throw sentError || receivedError;
 
-    // Combine unique user IDs
-    const userIds = [
-      ...new Set([
-        ...sentMessages.map(msg => msg.receiver_id),
-        ...receivedMessages.map(msg => msg.sender_id)
-      ])
-    ];
+    // Combine and deduplicate user IDs
+    const userIds = [...new Set([
+      ...(senderIds?.map(msg => msg.receiver_id) || []),
+      ...(receiverIds?.map(msg => msg.sender_id) || [])
+    ])];
+
+    if (userIds.length === 0) return [];
 
     // Get user details
     const { data: users, error: usersError } = await supabase
@@ -154,7 +143,7 @@ export const getChatUsers = async (currentUserId: string): Promise<User[]> => {
       name: user.name || 'Unknown User',
       email: user.email || '',
       role: user.role as 'seller' | 'buyer' | 'admin',
-      avatar: user.avatar_url || undefined
+      avatar: user.avatar_url
     }));
   } catch (error) {
     console.error("Error fetching chat users:", error);

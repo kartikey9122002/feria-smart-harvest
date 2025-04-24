@@ -4,59 +4,46 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { getProductsBySeller, updateProductStatus, deleteProduct } from "@/services/product";
 import { Product } from "@/types";
 import { Button } from "@/components/ui/button";
-import { Package, TrendingUp, Clock, AlertTriangle, Plus } from "lucide-react";
+import { Package, TrendingUp, Clock, AlertTriangle, Plus, Users } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { Link } from "react-router-dom";
 import ProductCard from "./ProductCard";
 import GovernmentSchemes from "./seller/GovernmentSchemes";
-import { getOrdersBySeller } from "@/services/order";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { getCurrentUser } from "@/services/auth";
+import { getChatUsers } from "@/services/chat";
+import ChatList from "./chat/ChatList";
+import { useQuery } from "@tanstack/react-query";
+import PricePrediction from "./seller/PricePrediction";
 
 const SellerDashboard = () => {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [orders, setOrders] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const user = getCurrentUser();
-  const sellerId = user?.id || "1";
+  const sellerId = user?.id || "";
 
-  useEffect(() => {
-    const fetchProductsAndOrders = async () => {
-      try {
-        const [fetchedProducts, fetchedOrders] = await Promise.all([
-          getProductsBySeller(sellerId),
-          getOrdersBySeller(sellerId),
-        ]);
-        setProducts(fetchedProducts);
-        setOrders(fetchedOrders);
-      } catch (error) {
-        toast({
-          title: "Error fetching data",
-          description: "Could not load your products or orders. Please try again.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const { data: products = [], isLoading, refetch } = useQuery({
+    queryKey: ['sellerProducts', sellerId],
+    queryFn: () => getProductsBySeller(sellerId)
+  });
 
-    fetchProductsAndOrders();
-  }, [sellerId, toast]);
+  const { data: chatUsers = [] } = useQuery({
+    queryKey: ['chatUsers', sellerId],
+    queryFn: () => getChatUsers(sellerId),
+    enabled: !!sellerId
+  });
 
   const handleStatusChange = async (id: string, status: 'approved' | 'rejected' | 'unavailable') => {
     try {
-      const updatedProduct = await updateProductStatus(id, status);
-      setProducts(products.map(product => 
-        product.id === id ? updatedProduct : product
-      ));
+      await updateProductStatus(id, status);
       toast({
-        title: "Product updated",
+        title: "Success",
         description: `Product status changed to ${status}.`,
       });
+      refetch();
     } catch (error) {
       toast({
-        title: "Error updating product",
-        description: "Could not update product status. Please try again.",
+        title: "Error",
+        description: "Could not update product status.",
         variant: "destructive",
       });
     }
@@ -65,15 +52,15 @@ const SellerDashboard = () => {
   const handleDelete = async (id: string) => {
     try {
       await deleteProduct(id);
-      setProducts(products.filter(product => product.id !== id));
       toast({
-        title: "Product deleted",
-        description: "Product has been removed from your inventory.",
+        title: "Success",
+        description: "Product deleted successfully.",
       });
+      refetch();
     } catch (error) {
       toast({
-        title: "Error deleting product",
-        description: "Could not delete product. Please try again.",
+        title: "Error",
+        description: "Could not delete product.",
         variant: "destructive",
       });
     }
@@ -83,29 +70,6 @@ const SellerDashboard = () => {
     return <div className="text-center py-10">Loading your products...</div>;
   }
 
-  const productBuyers: Record<string, Array<{
-    buyerId: string;
-    buyerName: string;
-    buyerEmail: string;
-    quantity: number;
-    date: string;
-  }>> = {};
-
-  orders.forEach(order => {
-    order.items.forEach((item: any) => {
-      if (!productBuyers[item.productId]) {
-        productBuyers[item.productId] = [];
-      }
-      productBuyers[item.productId].push({
-        buyerId: order.buyerId,
-        buyerName: order.buyerName || "Unknown Buyer",
-        buyerEmail: order.buyerEmail || "",
-        quantity: item.quantity,
-        date: order.createdAt,
-      });
-    });
-  });
-
   const approvedProducts = products.filter(p => p.status === 'approved');
   const pendingProducts = products.filter(p => p.status === 'pending');
   const unavailableProducts = products.filter(p => p.status === 'unavailable');
@@ -114,11 +78,27 @@ const SellerDashboard = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-3xl font-bold tracking-tight">Seller Dashboard</h2>
-        <Link to="/add-product">
-          <Button className="bg-farm-green hover:bg-farm-green-dark">
-            <Plus className="mr-2 h-4 w-4" /> Add New Product
-          </Button>
-        </Link>
+        <div className="flex gap-2">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline">
+                <Users className="mr-2 h-4 w-4" />
+                Chat with Buyers ({chatUsers.length})
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-[400px] sm:w-[540px]">
+              <SheetHeader>
+                <SheetTitle>Chat with Buyers</SheetTitle>
+              </SheetHeader>
+              <ChatList users={chatUsers} />
+            </SheetContent>
+          </Sheet>
+          <Link to="/add-product">
+            <Button className="bg-farm-green hover:bg-farm-green-dark">
+              <Plus className="mr-2 h-4 w-4" /> Add New Product
+            </Button>
+          </Link>
+        </div>
       </div>
       
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -165,6 +145,8 @@ const SellerDashboard = () => {
       
       <GovernmentSchemes />
       
+      <PricePrediction products={products} />
+      
       <div className="space-y-4">
         {pendingProducts.length > 0 && (
           <div>
@@ -177,7 +159,6 @@ const SellerDashboard = () => {
                   onStatusChange={handleStatusChange}
                   onDelete={handleDelete}
                   showChatButton={false}
-                  buyers={productBuyers[product.id] || []}
                 />
               ))}
             </div>
@@ -195,7 +176,6 @@ const SellerDashboard = () => {
                   onStatusChange={handleStatusChange}
                   onDelete={handleDelete}
                   showChatButton={true}
-                  buyers={productBuyers[product.id] || []}
                 />
               ))}
             </div>
@@ -212,7 +192,6 @@ const SellerDashboard = () => {
                   product={product} 
                   onStatusChange={handleStatusChange}
                   onDelete={handleDelete}
-                  buyers={productBuyers[product.id] || []}
                 />
               ))}
             </div>
