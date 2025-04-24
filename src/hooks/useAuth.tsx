@@ -25,9 +25,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Set up listener first
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+    // Set up listener first for auth state changes
+    const { data: listener } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      console.log("Auth state changed:", _event, session?.user?.id);
       setUser(session?.user ?? null);
+      
       if (session?.user) {
         // Use setTimeout to avoid potential deadlock with Supabase client
         setTimeout(() => {
@@ -39,30 +41,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    // Load session/profile on mount
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
-      } else {
+    // Load initial session/profile on mount
+    const initializeAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        console.log("Initial session:", session?.user?.id);
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          await fetchProfile(session.user.id);
+        } else {
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error("Error initializing auth:", error);
         setIsLoading(false);
       }
-    });
+    };
+
+    initializeAuth();
 
     return () => {
       listener?.subscription?.unsubscribe();
     };
-    // eslint-disable-next-line
   }, []);
 
-  async function fetchProfile(userId: string | null) {
-    setProfile(null);
+  async function fetchProfile(userId: string) {
+    console.log("Fetching profile for user:", userId);
     if (!userId) {
       setIsLoading(false);
       return;
     }
+    
     setIsLoading(true);
     try {
+      // First try to get the profile with a direct query
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
@@ -71,13 +84,63 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (error) {
         console.error("Error fetching profile:", error);
+        
+        // If profile doesn't exist yet, try to create it using user metadata
+        if (error.code === "PGRST116") { // Record not found
+          const { data: userData } = await supabase.auth.getUser();
+          if (userData?.user) {
+            const metadata = userData.user.user_metadata;
+            const email = userData.user.email;
+            
+            console.log("Creating missing profile from metadata:", metadata);
+            
+            const { data: newProfile, error: insertError } = await supabase
+              .from("profiles")
+              .insert([
+                {
+                  id: userId,
+                  name: metadata?.name || "User",
+                  email: email,
+                  role: metadata?.role || "buyer",
+                  avatar_url: null
+                }
+              ])
+              .select()
+              .single();
+              
+            if (insertError) {
+              console.error("Error creating profile:", insertError);
+              toast({
+                title: "Profile Error",
+                description: "Could not create user profile. Some features may be limited.",
+                variant: "destructive",
+              });
+            } else if (newProfile) {
+              console.log("Successfully created profile:", newProfile);
+              setProfile(newProfile as Profile);
+            }
+          }
+        } else {
+          toast({
+            title: "Profile Error",
+            description: "Could not load user profile. Please try logging out and back in.",
+            variant: "destructive",
+          });
+        }
       } else if (data) {
+        console.log("Found profile:", data);
         setProfile(data as Profile);
       }
     } catch (err) {
       console.error("Exception when fetching profile:", err);
+      toast({
+        title: "Profile Error",
+        description: "An unexpected error occurred. Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }
 
   async function signIn(email: string, password: string) {
@@ -85,8 +148,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
-      // Redirect handled by effect
+      
+      toast({
+        title: "Login successful",
+        description: "Welcome back to FarmFeria!",
+      });
+      
+      // Navigation is handled by the auth state change listener
     } catch (error: any) {
+      console.error("Login error:", error);
       toast({
         title: "Login failed",
         description: error.message || "Could not sign in. Please try again.",
@@ -120,7 +190,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const userId = signUpData.user?.id;
       if (!userId) throw new Error("User registration failed");
 
-      // 3. Create profile record - try/catch separately to provide better error handling
+      // 3. Create profile record
       try {
         const { error: profileError } = await supabase
           .from("profiles")
@@ -131,15 +201,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               email: data.email,
               avatar_url: null,
               role: data.role,
-            },
+            }
           ]);
 
         if (profileError) {
           console.error("Profile creation error:", profileError);
           
-          // Special handling for RLS errors - verify if profile exists despite the error
-          if (profileError.code === "42501") {
-            console.log("RLS error - checking if profile was created anyway...");
+          // Check if profile exists despite the error (RLS error)
+          if (profileError.code === "42501") { // RLS violation
             const { data: checkProfile } = await supabase
               .from("profiles")
               .select("*")
@@ -148,27 +217,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               
             if (checkProfile) {
               console.log("Profile exists despite RLS error:", checkProfile);
-              // Profile exists, no need to throw an error
-              toast({
-                title: "Registration successful",
-                description: "Your account has been created. You can now log in.",
-              });
-              return;
+            } else {
+              // Try to create profile with auth.getUser() to get fresh token
+              const { data: userData } = await supabase.auth.getUser();
+              if (userData?.user) {
+                await new Promise(resolve => setTimeout(resolve, 1000)); // Small delay
+                
+                const { error: retryError } = await supabase
+                  .from("profiles")
+                  .insert([
+                    {
+                      id: userId,
+                      name: data.name,
+                      email: data.email,
+                      avatar_url: null,
+                      role: data.role,
+                    }
+                  ]);
+                  
+                if (retryError) {
+                  console.error("Retry profile creation failed:", retryError);
+                }
+              }
             }
           }
-          
-          // If we reach here, there was a real error
-          toast({
-            title: "Profile creation failed",
-            description: profileError.message || "Could not create profile. Please contact support.",
-            variant: "destructive",
-          });
-        } else {
-          toast({
-            title: "Registration successful",
-            description: "Your account has been created successfully!",
-          });
         }
+        
+        toast({
+          title: "Registration successful",
+          description: "Your account has been created. You can now log in.",
+        });
+        
+        // Redirect to login page
+        navigate("/login");
+        
       } catch (profileCreationError: any) {
         console.error("Profile creation exception:", profileCreationError);
         toast({
@@ -194,12 +276,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await supabase.auth.signOut();
       setUser(null);
       setProfile(null);
+      toast({
+        title: "Signed out",
+        description: "You have been successfully signed out.",
+      });
+      
       if (navigate) {
         navigate("/login");
       } else {
         window.location.href = "/login";
       }
     } catch (error: any) {
+      console.error("Sign out error:", error);
       toast({
         title: "Sign out failed",
         description: error.message || "Could not sign out. Please try again.",

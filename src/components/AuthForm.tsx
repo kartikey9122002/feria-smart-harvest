@@ -16,7 +16,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/components/ui/use-toast";
 import { UserRole } from "@/types";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Loader2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface AuthFormProps {
@@ -26,7 +26,7 @@ interface AuthFormProps {
 const AuthForm = ({ type }: AuthFormProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { signIn, signUp, isLoading } = useAuth();
+  const { signIn, signUp, isLoading: authLoading } = useAuth();
 
   // Form state
   const [email, setEmail] = useState("");
@@ -35,6 +35,26 @@ const AuthForm = ({ type }: AuthFormProps) => {
   const [role, setRole] = useState<UserRole>("buyer");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [passwordErrors, setPasswordErrors] = useState<{ [key: string]: boolean }>({
+    minLength: false,
+  });
+
+  const validatePassword = (value: string) => {
+    const errors = {
+      minLength: value.length < 6,
+    };
+    
+    setPasswordErrors(errors);
+    return !Object.values(errors).some(Boolean);
+  };
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setPassword(value);
+    if (type === "register") {
+      validatePassword(value);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,31 +63,38 @@ const AuthForm = ({ type }: AuthFormProps) => {
 
     try {
       if (type === "login") {
+        if (!email || !password) {
+          throw new Error("Please enter both email and password");
+        }
+        
         await signIn(email, password);
-        toast({
-          title: "Login successful",
-          description: "Welcome back to FarmFeria!",
-        });
-        navigate("/dashboard");
+        // Navigation is handled in the auth hook
       } else {
-        if (password.length < 6) {
-          setError("Password must be at least 6 characters");
-          setIsSubmitting(false);
-          return;
+        // Registration validation
+        if (!name) {
+          throw new Error("Please enter your name");
+        }
+        
+        if (!email) {
+          throw new Error("Please enter your email address");
+        }
+        
+        if (!validatePassword(password)) {
+          throw new Error("Password must be at least 6 characters");
         }
         
         await signUp({ email, password, name, role });
-        // After successful signup, redirect to login page
-        navigate("/login");
+        // Navigation is handled in the auth hook
       }
     } catch (error: any) {
       console.error("Auth error:", error);
       setError(error.message || "An error occurred");
-      // Toast is already shown in the auth provider
     } finally {
       setIsSubmitting(false);
     }
   };
+  
+  const isProcessing = isSubmitting || authLoading;
 
   return (
     <Card className="w-full max-w-md mx-auto">
@@ -97,6 +124,8 @@ const AuthForm = ({ type }: AuthFormProps) => {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
+                disabled={isProcessing}
+                autoComplete="name"
               />
             </div>
           )}
@@ -110,6 +139,8 @@ const AuthForm = ({ type }: AuthFormProps) => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              disabled={isProcessing}
+              autoComplete={type === "login" ? "username" : "email"}
             />
           </div>
 
@@ -120,12 +151,17 @@ const AuthForm = ({ type }: AuthFormProps) => {
               type="password"
               placeholder="Enter your password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={handlePasswordChange}
               required
-              minLength={6}
+              disabled={isProcessing}
+              autoComplete={type === "login" ? "current-password" : "new-password"}
             />
             {type === "register" && (
-              <p className="text-xs text-muted-foreground">Password must be at least 6 characters</p>
+              <div className="text-xs text-muted-foreground">
+                <p className={passwordErrors.minLength ? "text-destructive" : ""}>
+                  • Password must be at least 6 characters
+                </p>
+              </div>
             )}
           </div>
 
@@ -136,6 +172,7 @@ const AuthForm = ({ type }: AuthFormProps) => {
                 value={role}
                 onValueChange={(value) => setRole(value as UserRole)}
                 className="flex flex-col space-y-1"
+                disabled={isProcessing}
               >
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="seller" id="seller" />
@@ -153,13 +190,16 @@ const AuthForm = ({ type }: AuthFormProps) => {
           <Button
             type="submit"
             className="w-full bg-farm-green hover:bg-farm-green-dark"
-            disabled={isLoading || isSubmitting}
+            disabled={isProcessing}
           >
-            {isLoading || isSubmitting
-              ? "Processing..."
-              : type === "login"
-              ? "Login"
-              : "Create Account"}
+            {isProcessing ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {type === "login" ? "Logging in..." : "Creating account..."}
+              </>
+            ) : (
+              type === "login" ? "Login" : "Create Account"
+            )}
           </Button>
           
           <div className="text-center text-sm">
@@ -170,6 +210,7 @@ const AuthForm = ({ type }: AuthFormProps) => {
                   variant="link"
                   className="p-0 h-auto font-normal text-farm-green hover:text-farm-green-dark"
                   onClick={() => navigate("/register")}
+                  disabled={isProcessing}
                 >
                   Register now
                 </Button>
@@ -181,6 +222,7 @@ const AuthForm = ({ type }: AuthFormProps) => {
                   variant="link"
                   className="p-0 h-auto font-normal text-farm-green hover:text-farm-green-dark"
                   onClick={() => navigate("/login")}
+                  disabled={isProcessing}
                 >
                   Login
                 </Button>
