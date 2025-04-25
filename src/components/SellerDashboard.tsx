@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { getProductsBySeller, updateProductStatus, deleteProduct } from "@/services/product";
+import { getProductsBySeller, updateProductStatus, deleteProduct, subscribeToProducts } from "@/services/product";
 import { Product } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Package, TrendingUp, Clock, AlertTriangle, Plus, Users } from "lucide-react";
@@ -13,13 +13,15 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { getCurrentUser } from "@/services/auth";
 import { getChatUsers } from "@/services/chat";
 import ChatList from "./chat/ChatList";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import PricePrediction from "./seller/PricePrediction";
+import { supabase } from "@/integrations/supabase/client";
 
 const SellerDashboard = () => {
   const { toast } = useToast();
   const user = getCurrentUser();
   const sellerId = user?.id || "";
+  const queryClient = useQueryClient();
 
   const { data: products = [], isLoading, refetch } = useQuery({
     queryKey: ['sellerProducts', sellerId],
@@ -31,6 +33,20 @@ const SellerDashboard = () => {
     queryFn: () => getChatUsers(sellerId),
     enabled: !!sellerId
   });
+
+  // Subscribe to real-time product updates
+  useEffect(() => {
+    if (!sellerId) return;
+    
+    const channel = subscribeToProducts(sellerId, (payload) => {
+      console.log("Real-time product change:", payload);
+      queryClient.invalidateQueries({ queryKey: ['sellerProducts', sellerId] });
+    });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [sellerId, queryClient]);
 
   const handleStatusChange = async (id: string, status: 'approved' | 'rejected' | 'unavailable') => {
     try {
